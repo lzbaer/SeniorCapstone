@@ -77,6 +77,7 @@ function createVisualization(json) {
             colorSelect++;
             if (colorSelect == colors.length)
                 colorSelect = 0;
+	d.color = colors[colorSelect];
 	return colors[colorSelect];
         })
         .style("opacity", 1)
@@ -193,7 +194,7 @@ function updateBreadcrumbs(nodeArray, percentageString) {
 
     entering.append("svg:polygon")
         .attr("points", breadcrumbPoints)
-        .style("fill", function (d) { return d.style; });
+        .style("fill", function (d) { return d.color; });
 
     entering.append("svg:text")
         .attr("x", (b.w + b.t) / 2)
