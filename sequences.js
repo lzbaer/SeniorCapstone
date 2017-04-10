@@ -39,6 +39,58 @@ var arc = d3.svg.arc()
     .innerRadius(function (d) { return Math.sqrt(d.y); })
     .outerRadius(function (d) { return Math.sqrt(d.y + d.dy); });
 
+//Lisa 4/9/17
+d3.text("originaldata.csv", function (text) {
+    //console.log("In mah function");
+    var origData = d3.csv.parseRows(text);
+    //assume columns 0, 1, 2 are of interest
+    var indicesOfInterest = [0, 1, 2];
+    //number of rows
+    var CSVFirstCol = new Array();
+    var CSVSecCol = new Array();
+    for (i = 0; i < origData.length; i++) {
+        var newPath = "";
+        for (j=0; j < indicesOfInterest.length; j++){
+            if (j != indicesOfInterest.length-1)
+            {
+                newPath = newPath.concat(origData[i][j], "-");
+            }
+            else
+            {
+                newPath = newPath.concat(origData[i][j]);
+                } 
+        }
+        var index = -1;
+        if (i > 0)
+         {index = CSVFirstCol.indexOf(newPath);}
+        if (index > -1)
+        {
+            CSVSecCol[index] = CSVSecCol[index] + 1;   
+        }
+        else
+        {
+            CSVFirstCol.push(newPath);
+            CSVSecCol.push(1);
+        }
+    }
+    //console.log(CSVFirstCol);
+    //console.log(CSVSecCol);
+    var finalData = new Array();
+    for (i = 0; i < CSVFirstCol.length; i++)
+    {
+        var newRow = new Array();
+        newRow.push(CSVFirstCol[i]);
+        newRow.push(CSVSecCol[i]);
+        finalData.push(newRow);
+    }
+    formattedCSV = d3.csv.format(finalData);
+    //console.log(formattedCSV);
+    var finalCSV = d3.csv.parseRows(formattedCSV);
+    var newJson = buildHierarchy(finalCSV);
+    createVisualization(newJson);
+});
+
+/*
 // Use d3.text and d3.csv.parseRows so that we do not need to have a header
 // row, and can receive the csv as an array of arrays.
 d3.text("FeedGrainsfinal.csv", function (text) {
@@ -47,6 +99,7 @@ d3.text("FeedGrainsfinal.csv", function (text) {
     createVisualization(json);
 });
 
+*/
 // Main function to draw and set up the visualization, once we have the data.
 function createVisualization(json) {
 
