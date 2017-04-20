@@ -8,15 +8,13 @@ var b = {
     w: 75, h: 30, s: 3, t: 10
 };
 
+// Length of the name in the breadcrumb
+var breadcrumbLength = 0;
+var allBreadCrumbLengths = [];
+var allNameLengths = [];
+
 // Mapping of steps to a cycle of colors.
-var colors = [
-  "#5687d1",
-  "#7b615c",
-  "#de783b",
-  "#6ab975",
-  "#a173d1",
-  "#bbbbbb"
-];
+var colors = d3.scale.category10();
 
 // Total size of all segments; we set this later, after loading the data.
 var totalSize = 0;
@@ -39,58 +37,6 @@ var arc = d3.svg.arc()
     .innerRadius(function (d) { return Math.sqrt(d.y); })
     .outerRadius(function (d) { return Math.sqrt(d.y + d.dy); });
 
-//Lisa 4/9/17
-d3.text("originaldata.csv", function (text) {
-    //console.log("In mah function");
-    var origData = d3.csv.parseRows(text);
-    //assume columns 0, 1, 2 are of interest
-    var indicesOfInterest = [0, 1, 2];
-    //number of rows
-    var CSVFirstCol = new Array();
-    var CSVSecCol = new Array();
-    for (i = 0; i < origData.length; i++) {
-        var newPath = "";
-        for (j=0; j < indicesOfInterest.length; j++){
-            if (j != indicesOfInterest.length-1)
-            {
-                newPath = newPath.concat(origData[i][j], "-");
-            }
-            else
-            {
-                newPath = newPath.concat(origData[i][j]);
-                } 
-        }
-        var index = -1;
-        if (i > 0)
-         {index = CSVFirstCol.indexOf(newPath);}
-        if (index > -1)
-        {
-            CSVSecCol[index] = CSVSecCol[index] + 1;   
-        }
-        else
-        {
-            CSVFirstCol.push(newPath);
-            CSVSecCol.push(1);
-        }
-    }
-    //console.log(CSVFirstCol);
-    //console.log(CSVSecCol);
-    var finalData = new Array();
-    for (i = 0; i < CSVFirstCol.length; i++)
-    {
-        var newRow = new Array();
-        newRow.push(CSVFirstCol[i]);
-        newRow.push(CSVSecCol[i]);
-        finalData.push(newRow);
-    }
-    formattedCSV = d3.csv.format(finalData);
-    //console.log(formattedCSV);
-    var finalCSV = d3.csv.parseRows(formattedCSV);
-    var newJson = buildHierarchy(finalCSV);
-    createVisualization(newJson);
-});
-
-/*
 // Use d3.text and d3.csv.parseRows so that we do not need to have a header
 // row, and can receive the csv as an array of arrays.
 d3.text("FeedGrainsfinal.csv", function (text) {
@@ -99,7 +45,11 @@ d3.text("FeedGrainsfinal.csv", function (text) {
     createVisualization(json);
 });
 
-*/
+function getNodeColor(d)
+{
+    return colors(d.name);
+}
+
 // Main function to draw and set up the visualization, once we have the data.
 function createVisualization(json) {
 
@@ -120,19 +70,26 @@ function createVisualization(json) {
             return (d.dx > 0.005); // 0.005 radians = 0.29 degrees
         });
 
+    // Make the domain for the color scale
+    var uniqueNames = (function(a) {
+        var output = [];
+        a.forEach(function(d) {
+            if (output.indexOf(d.name) === -1) {
+                output.push(d.name);
+            }
+        });
+        return output;
+    })(nodes);
+
+    colors.domain(uniqueNames);
+
     var path = vis.data([json]).selectAll("path")
         .data(nodes)
         .enter().append("svg:path")
         .attr("display", function (d) { return d.depth ? null : "none"; })
         .attr("d", arc)
         .attr("fill-rule", "evenodd")
-        .style("fill", function (d) {   
-            colorSelect++;
-            if (colorSelect == colors.length)
-                colorSelect = 0;
-	d.color = colors[colorSelect];
-	return colors[colorSelect];
-        })
+        .style("fill", getNodeColor)
         .style("opacity", 1)
         .on("mouseover", mouseover);
 
@@ -222,16 +179,38 @@ function initializeBreadcrumbTrail() {
 
 // Generate a string that describes the points of a breadcrumb polygon.
 function breadcrumbPoints(d, i) {
-    var points = [];
-    points.push("0,0");
-    points.push(b.w + ",0");
-    points.push(b.w + b.t + "," + (b.h / 2));
-    points.push(b.w + "," + b.h);
-    points.push("0," + b.h);
-    if (i > 0) { // Leftmost breadcrumb; don't include 6th vertex.
-        points.push(b.t + "," + (b.h / 2));
-    }
+	var points = [];
+	if (allNameLengths[i] > 6)
+	{
+		b.w = 75 + (3 + (allNameLengths[i]/18))*allNameLengths[i];
+		points.push("0,0");
+		points.push(b.w + ",0");
+		points.push(b.w + b.t + "," + (b.h / 2));
+		points.push(b.w + "," + b.h);
+		points.push("0," + b.h);
+		if (i > 0) { // Leftmost breadcrumb; don't include 6th vertex.
+			points.push(b.t + "," + (b.h / 2));
+		}
+	}
+	else
+	{
+		b.w = 75;
+		points.push("0,0");
+		points.push(b.w + ",0");
+		points.push(b.w + b.t + "," + (b.h / 2));
+		points.push(b.w + "," + b.h);
+		points.push("0," + b.h);
+		if (i > 0) { // Leftmost breadcrumb; don't include 6th vertex.
+			points.push(b.t + "," + (b.h / 2));
+		}
+	}
+    
+    
     return points.join(" ");
+}
+
+function breadcrumbTextLocation(d,i) {
+    return  ((allBreadCrumbLengths[i] + b.t) / 2);
 }
 
 // Update the breadcrumb trail to show the current sequence and percentage.
@@ -244,21 +223,48 @@ function updateBreadcrumbs(nodeArray, percentageString) {
 
     // Add breadcrumb and label for entering nodes.
     var entering = g.enter().append("svg:g");
-
-    entering.append("svg:polygon")
+	
+	entering.append("svg:text")
+		.text(function (d) { return d.name; })
+        .select(function(d,i) {
+            if(this.__data__.name.length > 6) {
+                allBreadCrumbLengths[i] = b.w + (3 + (this.__data__.name.length/18))*this.__data__.name.length;
+            }
+            else {
+                allBreadCrumbLengths[i] = b.w;
+            }
+            allNameLengths[i] = this.__data__.name.length;
+		});
+	
+	entering.append("svg:polygon")
         .attr("points", breadcrumbPoints)
-        .style("fill", function (d) { return d.color; });
-
-    entering.append("svg:text")
-        .attr("x", (b.w + b.t) / 2)
+        .style("fill", getNodeColor);
+		
+	entering.append("svg:text")
+        .attr("x", breadcrumbTextLocation)
         .attr("y", b.h / 2)
         .attr("dy", "0.35em")
         .attr("text-anchor", "middle")
         .text(function (d) { return d.name; });
 
+    breadcrumbLength = 0;
+
     // Set position for entering and updating nodes.
-    g.attr("transform", function (d, i) {
-        return "translate(" + i * (b.w + b.s) + ", 0)";
+    g.attr("transform", function(d, i) {
+        var breadCrumbStartPoint = 0;
+        breadcrumbLength += allBreadCrumbLengths[i] + b.s;
+        if (i == 0)
+        {
+            return "translate(" + breadCrumbStartPoint + ", 0)";
+        }
+        else
+        {
+            for (var j = 0; j < i; j++)
+            {
+                breadCrumbStartPoint += allBreadCrumbLengths[j] + b.s;
+            }
+            return "translate(" + breadCrumbStartPoint + ", 0)";
+        }
     });
 
     // Remove exiting nodes.
@@ -266,7 +272,7 @@ function updateBreadcrumbs(nodeArray, percentageString) {
 
     // Now move and update the percentage at the end.
     d3.select("#trail").select("#endlabel")
-        .attr("x", (nodeArray.length + 0.5) * (b.w + b.s))
+        .attr("x", (breadcrumbLength + 3*b.s + 3*b.t))
         .attr("y", b.h / 2)
         .attr("dy", "0.35em")
         .attr("text-anchor", "middle")
@@ -276,6 +282,8 @@ function updateBreadcrumbs(nodeArray, percentageString) {
     d3.select("#trail")
         .style("visibility", "");
 
+    // Reset b.w to default
+    b.w = 75;
 }
 
 function drawLegend() {
