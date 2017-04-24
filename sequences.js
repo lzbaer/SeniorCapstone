@@ -41,7 +41,7 @@ var arc = d3.svg.arc()
      //console.log("In mah function");
      var origData = d3.csv.parseRows(text);
      //assume columns 0, 1, 2 are of interest
-     var indicesOfInterest = [3, 8, 6, 1];
+     var indicesOfInterest = [12, 15, 7, 0];
      //number of rows
      var CSVFirstCol = new Array();
      var CSVSecCol = new Array();
@@ -108,6 +108,7 @@ function createVisualization(json) {
 
     // Basic setup of page elements.
     initializeBreadcrumbTrail();
+
     drawLegend();
     d3.select("#togglelegend").on("click", toggleLegend);
 
