@@ -37,24 +37,26 @@ var arc = d3.svg.arc()
     .innerRadius(function (d) { return Math.sqrt(d.y); })
     .outerRadius(function (d) { return Math.sqrt(d.y + d.dy); });
 //Lisa 4/9/17
- d3.text("originaldata.csv", function (text) {
+ d3.text("FeedGrains.csv", function (text) {
      //console.log("In mah function");
      var origData = d3.csv.parseRows(text);
      //assume columns 0, 1, 2 are of interest
-     var indicesOfInterest = [0, 1, 2];
+     var indicesOfInterest = [3, 8, 6, 1];
      //number of rows
      var CSVFirstCol = new Array();
      var CSVSecCol = new Array();
      for (i = 0; i < origData.length; i++) {
          var newPath = "";
          for (j=0; j < indicesOfInterest.length; j++){
+            var indiceToAdd = indicesOfInterest[j];  
              if (j != indicesOfInterest.length-1)
              {
-                 newPath = newPath.concat(origData[i][j], "-");
+                              
+                 newPath = newPath.concat(origData[i][indiceToAdd], "-");
              }
              else
              {
-                 newPath = newPath.concat(origData[i][j]);
+                 newPath = newPath.concat(origData[i][indiceToAdd]);
                  } 
          }
          var index = -1;
