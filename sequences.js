@@ -40,8 +40,24 @@ var arc = d3.svg.arc()
  d3.text("FeedGrains.csv", function (text) {
      //console.log("In mah function");
      var origData = d3.csv.parseRows(text);
-     //assume columns 0, 1, 2 are of interest
-     var indicesOfInterest = [12, 15, 7, 0];
+
+     	//JT 4/23/17
+     	//assume the following column values can be injected by a GUI
+     	var indicesOfInterest = [3, 8, 6, 1];
+	//replace existing hyphens with underscores
+	//and make blank cells say "(blank)"
+	for (i = 0; i < origData.length; i++){
+		for (j = 0; j < indicesOfInterest.length; j++){
+			var z = indicesOfInterest[j];  
+			if(origData[i][z].length==0){
+				origData[i][z] = "(blank)";
+			}
+			else{
+				origData[i][z] = origData[i][z].replace("-","_");
+			}
+		}
+	}
+
      //number of rows
      var CSVFirstCol = new Array();
      var CSVSecCol = new Array();
@@ -108,7 +124,6 @@ function createVisualization(json) {
 
     // Basic setup of page elements.
     initializeBreadcrumbTrail();
-
     drawLegend();
     d3.select("#togglelegend").on("click", toggleLegend);
 
